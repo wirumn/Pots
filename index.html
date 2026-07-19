@@ -4,237 +4,92 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pot Tracker - FFXIV Occult Crescent</title>
-  <meta name="description" content="Track Pot of Plenty FATE spawn timers across Chaos, Light, and OCE data centers in FFXIV Occult Crescent." />
+  <meta name="description" content="Track Pot of Plenty FATE spawn timers across Chaos, OCE, and Light data centers in FFXIV's Occult Crescent zone." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏺</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
+  <div class="bg-particles" id="bgParticles" aria-hidden="true"></div>
+
   <header class="header">
-    <h1 class="title">Pot Tracker</h1>
-    <p class="subtitle">Occult Crescent</p>
-    <div class="route">Chaos → OCE → Light</div>
+    <div class="header-glow" aria-hidden="true"></div>
+    <h1 class="title">
+      <span class="title-icon" aria-hidden="true">✦</span>
+      Pot Tracker
+      <span class="title-icon" aria-hidden="true">✦</span>
+    </h1>
+    <p class="subtitle">Occult Crescent - Triple Dip Route</p>
+    <div class="route-badge">
+      <span class="route-step" data-dc="chaos">Chaos</span>
+      <span class="route-arrow">→</span>
+      <span class="route-step" data-dc="oce">OCE</span>
+      <span class="route-arrow">→</span>
+      <span class="route-step" data-dc="light">Light</span>
+    </div>
   </header>
 
   <main class="main">
-    <div class="dc-grid">
-
-      <!-- Chaos -->
-      <div class="dc-card" data-dc="chaos" id="card-chaos">
-        <div class="card-top">
-          <span class="dc-dot"></span>
-          <h2 class="dc-name">Chaos</h2>
-          <span class="dc-status" id="status-chaos">Idle</span>
-        </div>
-
-        <div class="timer-block">
-          <div class="timer-value" id="timer-chaos">--:--</div>
-          <div class="timer-label" id="label-chaos">No active timer</div>
-          <div class="timer-loc" id="loc-display-chaos"></div>
-        </div>
-
-        <!-- Normal actions -->
-        <div class="actions" id="actions-chaos">
-          <button class="btn btn-spawn" id="spawn-chaos">Pot Spawned!</button>
-          <div class="actions-row">
-            <button class="btn btn-small" id="fresh-chaos">Fresh (10m)</button>
-            <button class="btn btn-small" id="edit-chaos">Edit</button>
-            <button class="btn btn-small btn-danger" id="reset-chaos">Reset</button>
-          </div>
-        </div>
-
-        <!-- Location picker (hidden, shown after clicking spawn) -->
-        <div class="loc-picker hidden" id="picker-chaos">
-          <div class="picker-prompt">Where did it spawn?</div>
-          <div class="picker-buttons">
-            <button class="btn btn-loc" data-dc="chaos" data-loc="north" id="pick-chaos-north">↑ North</button>
-            <button class="btn btn-loc" data-dc="chaos" data-loc="south" id="pick-chaos-south">↓ South</button>
-          </div>
-        </div>
-
-        <!-- Timer editor (hidden) -->
-        <div class="editor hidden" id="editor-chaos">
-          <div class="editor-title">Set Timer</div>
-          <div class="editor-field">
-            <label>Minutes left</label>
-            <input type="number" id="edit-min-chaos" min="0" max="30" value="30" />
-          </div>
-          <div class="editor-field">
-            <label>Seconds left</label>
-            <input type="number" id="edit-sec-chaos" min="0" max="59" value="0" />
-          </div>
-          <div class="editor-field">
-            <label>Or spawned X min ago</label>
-            <input type="number" id="edit-ago-chaos" min="0" max="30" placeholder="e.g. 12" />
-          </div>
-          <div class="editor-field loc-field">
-            <label>Location</label>
-            <div class="editor-loc-btns">
-              <button class="btn btn-small" id="editor-loc-chaos-north">North</button>
-              <button class="btn btn-small" id="editor-loc-chaos-south">South</button>
-            </div>
-          </div>
-          <div class="actions-row">
-            <button class="btn btn-apply" id="apply-chaos">Apply</button>
-            <button class="btn btn-small" id="cancel-chaos">Cancel</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- OCE -->
-      <div class="dc-card" data-dc="oce" id="card-oce">
-        <div class="card-top">
-          <span class="dc-dot"></span>
-          <h2 class="dc-name">OCE</h2>
-          <span class="dc-status" id="status-oce">Idle</span>
-        </div>
-
-        <div class="timer-block">
-          <div class="timer-value" id="timer-oce">--:--</div>
-          <div class="timer-label" id="label-oce">No active timer</div>
-          <div class="timer-loc" id="loc-display-oce"></div>
-        </div>
-
-        <div class="actions" id="actions-oce">
-          <button class="btn btn-spawn" id="spawn-oce">Pot Spawned!</button>
-          <div class="actions-row">
-            <button class="btn btn-small" id="fresh-oce">Fresh (10m)</button>
-            <button class="btn btn-small" id="edit-oce">Edit</button>
-            <button class="btn btn-small btn-danger" id="reset-oce">Reset</button>
-          </div>
-        </div>
-
-        <div class="loc-picker hidden" id="picker-oce">
-          <div class="picker-prompt">Where did it spawn?</div>
-          <div class="picker-buttons">
-            <button class="btn btn-loc" data-dc="oce" data-loc="north" id="pick-oce-north">↑ North</button>
-            <button class="btn btn-loc" data-dc="oce" data-loc="south" id="pick-oce-south">↓ South</button>
-          </div>
-        </div>
-
-        <div class="editor hidden" id="editor-oce">
-          <div class="editor-title">Set Timer</div>
-          <div class="editor-field">
-            <label>Minutes left</label>
-            <input type="number" id="edit-min-oce" min="0" max="30" value="30" />
-          </div>
-          <div class="editor-field">
-            <label>Seconds left</label>
-            <input type="number" id="edit-sec-oce" min="0" max="59" value="0" />
-          </div>
-          <div class="editor-field">
-            <label>Or spawned X min ago</label>
-            <input type="number" id="edit-ago-oce" min="0" max="30" placeholder="e.g. 12" />
-          </div>
-          <div class="editor-field loc-field">
-            <label>Location</label>
-            <div class="editor-loc-btns">
-              <button class="btn btn-small" id="editor-loc-oce-north">North</button>
-              <button class="btn btn-small" id="editor-loc-oce-south">South</button>
-            </div>
-          </div>
-          <div class="actions-row">
-            <button class="btn btn-apply" id="apply-oce">Apply</button>
-            <button class="btn btn-small" id="cancel-oce">Cancel</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Light -->
-      <div class="dc-card" data-dc="light" id="card-light">
-        <div class="card-top">
-          <span class="dc-dot"></span>
-          <h2 class="dc-name">Light</h2>
-          <span class="dc-status" id="status-light">Idle</span>
-        </div>
-
-        <div class="timer-block">
-          <div class="timer-value" id="timer-light">--:--</div>
-          <div class="timer-label" id="label-light">No active timer</div>
-          <div class="timer-loc" id="loc-display-light"></div>
-        </div>
-
-        <div class="actions" id="actions-light">
-          <button class="btn btn-spawn" id="spawn-light">Pot Spawned!</button>
-          <div class="actions-row">
-            <button class="btn btn-small" id="fresh-light">Fresh (10m)</button>
-            <button class="btn btn-small" id="edit-light">Edit</button>
-            <button class="btn btn-small btn-danger" id="reset-light">Reset</button>
-          </div>
-        </div>
-
-        <div class="loc-picker hidden" id="picker-light">
-          <div class="picker-prompt">Where did it spawn?</div>
-          <div class="picker-buttons">
-            <button class="btn btn-loc" data-dc="light" data-loc="north" id="pick-light-north">↑ North</button>
-            <button class="btn btn-loc" data-dc="light" data-loc="south" id="pick-light-south">↓ South</button>
-          </div>
-        </div>
-
-        <div class="editor hidden" id="editor-light">
-          <div class="editor-title">Set Timer</div>
-          <div class="editor-field">
-            <label>Minutes left</label>
-            <input type="number" id="edit-min-light" min="0" max="30" value="30" />
-          </div>
-          <div class="editor-field">
-            <label>Seconds left</label>
-            <input type="number" id="edit-sec-light" min="0" max="59" value="0" />
-          </div>
-          <div class="editor-field">
-            <label>Or spawned X min ago</label>
-            <input type="number" id="edit-ago-light" min="0" max="30" placeholder="e.g. 12" />
-          </div>
-          <div class="editor-field loc-field">
-            <label>Location</label>
-            <div class="editor-loc-btns">
-              <button class="btn btn-small" id="editor-loc-light-north">North</button>
-              <button class="btn btn-small" id="editor-loc-light-south">South</button>
-            </div>
-          </div>
-          <div class="actions-row">
-            <button class="btn btn-apply" id="apply-light">Apply</button>
-            <button class="btn btn-small" id="cancel-light">Cancel</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Map -->
-    <div class="panel map-panel">
-      <button class="panel-toggle" id="mapToggle">
-        <span id="mapToggleIcon">▶</span> Pot Coffer Map
-      </button>
-      <div class="panel-body hidden" id="mapContent">
-        <img src="South_Horn_Pot_Coffers_Color_Coded.jpg" alt="South Horn Pot Coffer Locations" class="map-img" />
-      </div>
-    </div>
+    <!-- Data center cards are generated by script.js from one template -->
+    <div class="dc-grid" id="dcGrid"></div>
 
     <!-- Next Spawn -->
-    <div class="panel">
+    <section class="panel next-panel">
+      <div class="panel-accent" aria-hidden="true"></div>
       <h3 class="panel-title">Next Spawn</h3>
-      <div id="nextUpContent">
-        <p class="muted">No active timers</p>
+      <div class="next-content" id="nextUpContent">
+        <p class="muted">No active timers - hit "Pot Spawned!" when a FATE pops</p>
       </div>
-    </div>
+    </section>
+
+    <!-- Pot Coffer Map -->
+    <section class="panel map-panel">
+      <button class="map-toggle" id="mapToggle" aria-expanded="false" aria-controls="mapContent">
+        <span class="map-toggle-icon" id="mapToggleIcon" aria-hidden="true">▶</span>
+        <span>Pot Coffer Map</span>
+        <span class="map-hint">tap image to zoom</span>
+      </button>
+      <div class="map-content" id="mapContent">
+        <img
+          src="South_Horn_Pot_Coffers_Color_Coded.jpg"
+          alt="South Horn Pot Coffer Locations - Color Coded Map"
+          class="map-image"
+          id="mapImage"
+          loading="lazy"
+        />
+      </div>
+    </section>
 
     <!-- History -->
-    <div class="panel">
+    <section class="panel history-panel">
       <div class="panel-header">
-        <h3 class="panel-title">History</h3>
-        <button class="btn btn-small btn-danger" id="clearHistory">Clear</button>
+        <h3 class="panel-title">Spawn History</h3>
+        <button class="btn btn-ghost btn-danger-ghost" id="clearHistory">Clear</button>
       </div>
       <div class="history-list" id="historyList">
         <p class="muted">No spawns recorded yet</p>
       </div>
-    </div>
+    </section>
   </main>
 
   <footer class="footer">
-    Pot Tracker for FFXIV Occult Crescent - data saved in browser
+    Pot Tracker for FFXIV Occult Crescent • Data persists in your browser
   </footer>
+
+  <!-- Fullscreen map lightbox -->
+  <div class="lightbox hidden" id="lightbox" role="dialog" aria-label="Pot coffer map, full size">
+    <button class="lightbox-close" id="lightboxClose" aria-label="Close map">✕</button>
+    <div class="lightbox-scroll">
+      <img
+        src="South_Horn_Pot_Coffers_Color_Coded.jpg"
+        alt="South Horn Pot Coffer Locations - Color Coded Map, full size"
+        class="lightbox-img"
+      />
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>
