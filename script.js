@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   Occult Crescent Pot Tracker — Application Logic
+   Occult Crescent Pot Tracker - Application Logic
    ═══════════════════════════════════════════════════════════ */
 
 (() => {
@@ -33,6 +33,13 @@
       spawnBtn: document.getElementById(`spawn-${dc}`),
       freshBtn: document.getElementById(`fresh-${dc}`),
       resetBtn: document.getElementById(`reset-${dc}`),
+      editBtn: document.getElementById(`edit-${dc}`),
+      editor: document.getElementById(`editor-${dc}`),
+      editMin: document.getElementById(`edit-min-${dc}`),
+      editSec: document.getElementById(`edit-sec-${dc}`),
+      editAgo: document.getElementById(`edit-ago-${dc}`),
+      applyBtn: document.getElementById(`apply-${dc}`),
+      cancelBtn: document.getElementById(`cancel-${dc}`),
       locNorth: document.getElementById(`loc-${dc}-north`),
       locSouth: document.getElementById(`loc-${dc}-south`),
     };
@@ -40,6 +47,9 @@
   const nextUpContent = document.getElementById('nextUpContent');
   const historyList = document.getElementById('historyList');
   const clearHistoryBtn = document.getElementById('clearHistory');
+  const mapToggle = document.getElementById('mapToggle');
+  const mapContent = document.getElementById('mapContent');
+  const mapToggleIcon = document.getElementById('mapToggleIcon');
 
   // ── Persistence ──
   function saveState() {
@@ -95,7 +105,7 @@
   function sendBrowserNotification(dc, location) {
     if ('Notification' in window && Notification.permission === 'granted') {
       const locStr = location ? ` (${location.toUpperCase()})` : '';
-      new Notification(`🏺 Pot Spawning — ${dc.toUpperCase()}${locStr}`, {
+      new Notification(`🏺 Pot Spawning - ${dc.toUpperCase()}${locStr}`, {
         body: 'The next Pot of Plenty FATE should be spawning soon!',
         icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🏺</text></svg>',
       });
@@ -137,7 +147,7 @@
     state[dc].totalDuration = durationSeconds;
 
     // Log to history
-    const locStr = state[dc].location || '—';
+    const locStr = state[dc].location || '-';
     state.history.unshift({
       dc,
       location: locStr,
@@ -155,6 +165,18 @@
 
     const typeLabel = durationSeconds === FRESH_INTERVAL ? 'Fresh instance' : 'Spawn';
     showToast(`${typeLabel} timer started for ${dc.toUpperCase()}`, dc);
+  }
+
+  // Start a timer with a specific remaining time (for manual edit / retroactive)
+  function startTimerWithRemaining(dc, remainingSeconds) {
+    const total = SPAWN_INTERVAL; // always treat as a 30m cycle
+    const now = Date.now();
+    state[dc].targetTime = now + remainingSeconds * 1000;
+    state[dc].totalDuration = total;
+
+    saveState();
+    updateCard(dc);
+    updateNextUp();
   }
 
   function resetTimer(dc) {
@@ -175,6 +197,59 @@
     saveState();
     updateLocationButtons(dc);
     updateNextUp();
+  }
+
+  // ── Manual Timer Editor ──
+  function toggleEditor(dc) {
+    const editor = els[dc].editor;
+    const isOpen = editor.classList.contains('open');
+    // Close all editors first
+    DCS.forEach((d) => els[d].editor.classList.remove('open'));
+    if (!isOpen) {
+      // Pre-fill with current remaining time if a timer is active
+      if (state[dc].targetTime) {
+        const remaining = Math.max(0, (state[dc].targetTime - Date.now()) / 1000);
+        els[dc].editMin.value = Math.floor(remaining / 60);
+        els[dc].editSec.value = Math.floor(remaining % 60);
+      } else {
+        els[dc].editMin.value = 30;
+        els[dc].editSec.value = 0;
+      }
+      els[dc].editAgo.value = '';
+      editor.classList.add('open');
+    }
+  }
+
+  function applyEditor(dc) {
+    const agoVal = parseInt(els[dc].editAgo.value, 10);
+
+    let remainingSeconds;
+    if (!isNaN(agoVal) && agoVal >= 0) {
+      // Retroactive: pot spawned X minutes ago, so remaining = 30 - X minutes
+      remainingSeconds = Math.max(0, SPAWN_INTERVAL - agoVal * 60);
+    } else {
+      // Manual: set exact remaining time
+      const mins = parseInt(els[dc].editMin.value, 10) || 0;
+      const secs = parseInt(els[dc].editSec.value, 10) || 0;
+      remainingSeconds = Math.max(0, mins * 60 + secs);
+    }
+
+    startTimerWithRemaining(dc, remainingSeconds);
+
+    // Log to history
+    const locStr = state[dc].location || '-';
+    state.history.unshift({
+      dc,
+      location: locStr,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      type: 'manual',
+    });
+    if (state.history.length > 50) state.history.length = 50;
+    saveState();
+    renderHistory();
+
+    els[dc].editor.classList.remove('open');
+    showToast(`Timer set manually for ${dc.toUpperCase()}`, dc);
   }
 
   // ── UI Updates ──
@@ -210,7 +285,7 @@
     el.ring.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - progress);
 
     if (remaining <= 0) {
-      // Timer expired — spawning!
+      // Timer expired - spawning!
       card.classList.remove('active');
       card.classList.add('spawning');
       el.timer.textContent = 'NOW!';
@@ -219,7 +294,7 @@
       el.status.className = 'dc-status spawning';
       el.ring.style.strokeDashoffset = 0;
     } else if (remaining <= WARNING_THRESHOLD) {
-      // Warning — close to spawn
+      // Warning - close to spawn
       card.classList.add('active');
       card.classList.remove('spawning');
       el.label.textContent = 'Spawning soon!';
@@ -257,7 +332,7 @@
     });
 
     if (items.length === 0) {
-      nextUpContent.innerHTML = '<p class="next-up-empty">No active timers — click "Pot Spawned!" when a FATE pops</p>';
+      nextUpContent.innerHTML = '<p class="next-up-empty">No active timers - click "Pot Spawned!" when a FATE pops</p>';
       return;
     }
 
@@ -267,7 +342,7 @@
     nextUpContent.innerHTML = items
       .map((item) => {
         const timeStr = item.remaining <= 0 ? 'NOW!' : formatTime(item.remaining);
-        const locStr = item.location ? item.location.charAt(0).toUpperCase() + item.location.slice(1) : '—';
+        const locStr = item.location ? item.location.charAt(0).toUpperCase() + item.location.slice(1) : '-';
         return `
           <div class="next-up-item" data-dc="${item.dc}">
             <span class="dc-dot"></span>
@@ -289,7 +364,9 @@
     historyList.innerHTML = state.history
       .slice(0, 30)
       .map((entry) => {
-        const typeIcon = entry.type === 'fresh' ? '🆕' : '🏺';
+        let typeIcon = '🏺';
+        if (entry.type === 'fresh') typeIcon = '🆕';
+        else if (entry.type === 'manual') typeIcon = '✏️';
         return `
           <div class="history-entry" data-dc="${entry.dc}">
             <span class="h-dot"></span>
@@ -308,7 +385,6 @@
   const notifiedTimers = new Set();
 
   // ── Main Tick Loop ──
-  let lastWarningState = {};
   function tick() {
     DCS.forEach((dc) => {
       updateCard(dc);
@@ -330,7 +406,7 @@
         const warningKey = `${timerKey}_warn`;
         if (remaining <= WARNING_THRESHOLD && remaining > WARNING_THRESHOLD - 2 && !notifiedTimers.has(warningKey)) {
           notifiedTimers.add(warningKey);
-          showToast(`⚠ ${dc.toUpperCase()} — 5 minutes until spawn!`, dc);
+          showToast(`⚠ ${dc.toUpperCase()} - 5 minutes until spawn!`, dc);
         }
       }
     });
@@ -363,17 +439,26 @@
     }
   }
 
+  // ── Map Toggle ──
+  function bindMapToggle() {
+    mapToggle.addEventListener('click', () => {
+      const isOpen = mapContent.classList.contains('open');
+      mapContent.classList.toggle('open');
+      mapToggleIcon.textContent = isOpen ? '▶' : '▼';
+    });
+  }
+
   // ── Event Bindings ──
   function bindEvents() {
     DCS.forEach((dc) => {
       const el = els[dc];
 
-      // Spawn button — 30 min timer
+      // Spawn button - 30 min timer
       el.spawnBtn.addEventListener('click', () => {
         startTimer(dc, SPAWN_INTERVAL);
       });
 
-      // Fresh instance button — 10 min timer
+      // Fresh instance button - 10 min timer
       el.freshBtn.addEventListener('click', () => {
         startTimer(dc, FRESH_INTERVAL);
       });
@@ -382,6 +467,25 @@
       el.resetBtn.addEventListener('click', () => {
         resetTimer(dc);
         showToast(`${dc.toUpperCase()} timer reset`, dc);
+      });
+
+      // Edit timer button
+      el.editBtn.addEventListener('click', () => toggleEditor(dc));
+
+      // Apply editor
+      el.applyBtn.addEventListener('click', () => applyEditor(dc));
+
+      // Cancel editor
+      el.cancelBtn.addEventListener('click', () => {
+        el.editor.classList.remove('open');
+      });
+
+      // Clear the "ago" field when user types in min/sec, and vice versa
+      el.editMin.addEventListener('input', () => { els[dc].editAgo.value = ''; });
+      el.editSec.addEventListener('input', () => { els[dc].editAgo.value = ''; });
+      el.editAgo.addEventListener('input', () => {
+        els[dc].editMin.value = '';
+        els[dc].editSec.value = '';
       });
 
       // Location buttons
@@ -396,6 +500,9 @@
       renderHistory();
       showToast('History cleared');
     });
+
+    // Map toggle
+    bindMapToggle();
 
     // Request notification permission on first interaction
     document.addEventListener('click', requestNotificationPermission, { once: true });

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   Occult Crescent Pot Tracker — Design System
+   Occult Crescent Pot Tracker - Design System
    Theme: Dark arcane / crystal aesthetic inspired by FFXIV
    ═══════════════════════════════════════════════════════════ */
 
@@ -807,4 +807,182 @@ body {
   .history-panel {
     padding: 1.2rem 1.4rem;
   }
+}
+
+/* ── Timer Editor Panel ── */
+.timer-editor {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.3s ease,
+              margin-top 0.3s ease;
+  margin-top: 0;
+}
+
+.timer-editor.open {
+  max-height: 300px;
+  opacity: 1;
+  margin-top: 1rem;
+}
+
+.editor-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.editor-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.editor-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.editor-input {
+  width: 80px;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  transition: border-color var(--transition-fast);
+  -moz-appearance: textfield;
+}
+
+.editor-input::-webkit-outer-spin-button,
+.editor-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.editor-input:focus {
+  border-color: var(--accent-primary);
+}
+
+.editor-input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.btn-editor-apply {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  font-size: 0.78rem;
+  background: linear-gradient(135deg, var(--accent-primary), #7c3aed);
+  color: #fff;
+}
+
+.btn-editor-apply:hover {
+  filter: brightness(1.1);
+}
+
+.btn-editor-cancel {
+  flex: 0 0 auto;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.78rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.btn-editor-cancel:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+/* ── Edit Timer Button ── */
+.btn-edit {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.72rem;
+  background: rgba(168, 85, 247, 0.06);
+  border: 1px solid rgba(168, 85, 247, 0.12);
+  color: var(--accent-secondary);
+}
+
+.btn-edit:hover {
+  background: rgba(168, 85, 247, 0.12);
+  color: var(--accent-primary);
+}
+
+/* ── Map Panel (Collapsible) ── */
+.map-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  margin-bottom: 1.5rem;
+  backdrop-filter: blur(16px);
+  overflow: hidden;
+}
+
+.map-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 1.2rem 1.5rem;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  text-align: left;
+}
+
+.map-toggle:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.map-toggle-icon {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  transition: transform 0.3s ease;
+}
+
+.map-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.3s ease;
+  padding: 0 1.5rem;
+}
+
+.map-content.open {
+  max-height: 800px;
+  padding: 0 1.5rem 1.5rem;
+}
+
+.map-image {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  display: block;
 }
