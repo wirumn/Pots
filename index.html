@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Occult Crescent Pot Tracker — FFXIV</title>
+  <meta name="description" content="Track Pot of Plenty FATE spawn timers across Chaos, Light, and OCE data centers in FFXIV's Occult Crescent zone." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Animated background particles -->
+  <div class="bg-particles" id="bgParticles"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-glow"></div>
+    <h1 class="title">
+      <span class="title-icon">✦</span>
+      Pot Tracker
+      <span class="title-icon">✦</span>
+    </h1>
+    <p class="subtitle">Occult Crescent — Triple Dip Route</p>
+    <div class="route-badge">
+      <span class="route-step" data-dc="chaos">Chaos</span>
+      <span class="route-arrow">→</span>
+      <span class="route-step" data-dc="oce">OCE</span>
+      <span class="route-arrow">→</span>
+      <span class="route-step" data-dc="light">Light</span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+    <!-- DC Cards -->
+    <div class="dc-grid">
+
+      <!-- Chaos -->
+      <div class="dc-card" data-dc="chaos" id="card-chaos">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <div class="dc-indicator"></div>
+          <h2 class="dc-name">Chaos</h2>
+          <div class="dc-status" id="status-chaos">Idle</div>
+        </div>
+
+        <div class="timer-ring-wrap">
+          <svg class="timer-ring" viewBox="0 0 200 200">
+            <circle class="timer-ring-bg" cx="100" cy="100" r="88" />
+            <circle class="timer-ring-progress" id="ring-chaos" cx="100" cy="100" r="88"
+              stroke-dasharray="553" stroke-dashoffset="0" />
+          </svg>
+          <div class="timer-display">
+            <span class="timer-value" id="timer-chaos">--:--</span>
+            <span class="timer-label" id="label-chaos">No active timer</span>
+          </div>
+        </div>
+
+        <div class="location-selector">
+          <span class="location-label">Location</span>
+          <div class="location-buttons">
+            <button class="loc-btn" data-dc="chaos" data-loc="north" id="loc-chaos-north">
+              <span class="loc-arrow">↑</span> North
+            </button>
+            <button class="loc-btn" data-dc="chaos" data-loc="south" id="loc-chaos-south">
+              <span class="loc-arrow">↓</span> South
+            </button>
+          </div>
+        </div>
+
+        <div class="card-actions">
+          <button class="btn btn-spawn" data-dc="chaos" id="spawn-chaos">
+            <span class="btn-pulse"></span>
+            ✦ Pot Spawned!
+          </button>
+          <div class="secondary-actions">
+            <button class="btn btn-fresh" data-dc="chaos" id="fresh-chaos">
+              Fresh Instance (10m)
+            </button>
+            <button class="btn btn-reset" data-dc="chaos" id="reset-chaos">
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- OCE -->
+      <div class="dc-card" data-dc="oce" id="card-oce">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <div class="dc-indicator"></div>
+          <h2 class="dc-name">OCE</h2>
+          <div class="dc-status" id="status-oce">Idle</div>
+        </div>
+
+        <div class="timer-ring-wrap">
+          <svg class="timer-ring" viewBox="0 0 200 200">
+            <circle class="timer-ring-bg" cx="100" cy="100" r="88" />
+            <circle class="timer-ring-progress" id="ring-oce" cx="100" cy="100" r="88"
+              stroke-dasharray="553" stroke-dashoffset="0" />
+          </svg>
+          <div class="timer-display">
+            <span class="timer-value" id="timer-oce">--:--</span>
+            <span class="timer-label" id="label-oce">No active timer</span>
+          </div>
+        </div>
+
+        <div class="location-selector">
+          <span class="location-label">Location</span>
+          <div class="location-buttons">
+            <button class="loc-btn" data-dc="oce" data-loc="north" id="loc-oce-north">
+              <span class="loc-arrow">↑</span> North
+            </button>
+            <button class="loc-btn" data-dc="oce" data-loc="south" id="loc-oce-south">
+              <span class="loc-arrow">↓</span> South
+            </button>
+          </div>
+        </div>
+
+        <div class="card-actions">
+          <button class="btn btn-spawn" data-dc="oce" id="spawn-oce">
+            <span class="btn-pulse"></span>
+            ✦ Pot Spawned!
+          </button>
+          <div class="secondary-actions">
+            <button class="btn btn-fresh" data-dc="oce" id="fresh-oce">
+              Fresh Instance (10m)
+            </button>
+            <button class="btn btn-reset" data-dc="oce" id="reset-oce">
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Light -->
+      <div class="dc-card" data-dc="light" id="card-light">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <div class="dc-indicator"></div>
+          <h2 class="dc-name">Light</h2>
+          <div class="dc-status" id="status-light">Idle</div>
+        </div>
+
+        <div class="timer-ring-wrap">
+          <svg class="timer-ring" viewBox="0 0 200 200">
+            <circle class="timer-ring-bg" cx="100" cy="100" r="88" />
+            <circle class="timer-ring-progress" id="ring-light" cx="100" cy="100" r="88"
+              stroke-dasharray="553" stroke-dashoffset="0" />
+          </svg>
+          <div class="timer-display">
+            <span class="timer-value" id="timer-light">--:--</span>
+            <span class="timer-label" id="label-light">No active timer</span>
+          </div>
+        </div>
+
+        <div class="location-selector">
+          <span class="location-label">Location</span>
+          <div class="location-buttons">
+            <button class="loc-btn" data-dc="light" data-loc="north" id="loc-light-north">
+              <span class="loc-arrow">↑</span> North
+            </button>
+            <button class="loc-btn" data-dc="light" data-loc="south" id="loc-light-south">
+              <span class="loc-arrow">↓</span> South
+            </button>
+          </div>
+        </div>
+
+        <div class="card-actions">
+          <button class="btn btn-spawn" data-dc="light" id="spawn-light">
+            <span class="btn-pulse"></span>
+            ✦ Pot Spawned!
+          </button>
+          <div class="secondary-actions">
+            <button class="btn btn-fresh" data-dc="light" id="fresh-light">
+              Fresh Instance (10m)
+            </button>
+            <button class="btn btn-reset" data-dc="light" id="reset-light">
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Next Up Panel -->
+    <div class="next-up-panel" id="nextUpPanel">
+      <div class="next-up-glow"></div>
+      <h3 class="next-up-title">⏱ Next Spawn</h3>
+      <div class="next-up-content" id="nextUpContent">
+        <p class="next-up-empty">No active timers — click "Pot Spawned!" when a FATE pops</p>
+      </div>
+    </div>
+
+    <!-- History Log -->
+    <div class="history-panel" id="historyPanel">
+      <div class="history-header">
+        <h3 class="history-title">📜 Spawn History</h3>
+        <button class="btn btn-clear-history" id="clearHistory">Clear</button>
+      </div>
+      <div class="history-list" id="historyList">
+        <p class="history-empty">No spawns recorded yet</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Audio for notification -->
+  <div id="notificationSound"></div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>Pot Tracker for FFXIV Occult Crescent • Data persists in your browser</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
