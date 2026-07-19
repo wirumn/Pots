@@ -12,7 +12,8 @@
   const LATE_NOTIFY_GRACE = 5 * 60;   // still alert up to 5 min past spawn (hidden tab)
   const RING_R = 88;
   const RING_C = 2 * Math.PI * RING_R;
-  const STORAGE_KEY = 'potTracker_v3';
+  const STORAGE_KEY = 'potTracker_v4';
+  const LEGACY_STORAGE_KEY = 'potTracker_v3';
   const BASE_TITLE = document.title;
 
   const DC_LIST = [
@@ -23,12 +24,16 @@
   const DCS = DC_LIST.map((d) => d.id);
 
   // -- State --
+  // nextLocation = where the UPCOMING pot will spawn. Spawns alternate
+  // sides, so logging a spawn at north predicts the next one at south.
   const state = {
-    chaos: { targetTime: null, location: null, totalDuration: null },
-    oce:   { targetTime: null, location: null, totalDuration: null },
-    light: { targetTime: null, location: null, totalDuration: null },
+    chaos: { targetTime: null, nextLocation: null, totalDuration: null },
+    oce:   { targetTime: null, nextLocation: null, totalDuration: null },
+    light: { targetTime: null, nextLocation: null, totalDuration: null },
     history: [],
   };
+
+  const opposite = (loc) => (loc === 'north' ? 'south' : loc === 'south' ? 'north' : null);
 
   let pendingSpawn = null;   // dc id awaiting a location pick, or null
   const editorLoc = {};      // location selected inside each editor
@@ -94,7 +99,7 @@
           <input type="number" id="edit-ago-${dc}" min="0" max="30" placeholder="e.g. 12" />
         </div>
         <div class="editor-row">
-          <label>Location</label>
+          <label>Next spawn at</label>
           <div class="editor-loc-btns">
             <button class="btn btn-ghost" id="editor-loc-${dc}-north">North</button>
             <button class="btn btn-ghost" id="editor-loc-${dc}-south">South</button>
@@ -158,17 +163,27 @@
 
   function load() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      let raw = localStorage.getItem(STORAGE_KEY);
+      let legacy = false;
+      if (!raw) {
+        // v3 stored the LAST spawn point; the predicted next one is its opposite
+        raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+        legacy = true;
+      }
       if (!raw) return;
       const s = JSON.parse(raw);
       DCS.forEach((dc) => {
         if (s[dc]) {
           state[dc].targetTime = s[dc].targetTime || null;
-          state[dc].location = s[dc].location || null;
+          state[dc].nextLocation = legacy ? opposite(s[dc].location) : (s[dc].nextLocation || null);
           state[dc].totalDuration = s[dc].totalDuration || null;
         }
       });
       if (Array.isArray(s.history)) state.history = s.history;
+      if (legacy) {
+        save();
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+      }
     } catch (_) { /* corrupted */ }
   }
 
@@ -245,15 +260,16 @@
   }
 
   // -- Timer core --
-  function startTimer(dc, duration, location, type) {
+  // spawnedAt = where the pot just appeared; the next one spawns opposite
+  function startTimer(dc, duration, spawnedAt, type) {
     const now = Date.now();
     state[dc].targetTime = now + duration * 1000;
     state[dc].totalDuration = duration;
-    state[dc].location = location;
+    state[dc].nextLocation = opposite(spawnedAt);
 
     state.history.unshift({
       dc,
-      location: location || null,
+      location: spawnedAt || null,
       time: new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       type,
     });
@@ -268,7 +284,7 @@
   function resetTimer(dc) {
     state[dc].targetTime = null;
     state[dc].totalDuration = null;
-    state[dc].location = null;
+    state[dc].nextLocation = null;
     save();
     updateCard(dc);
     updateNextUp();
@@ -288,7 +304,7 @@
     if (pendingSpawn !== dc) return;
     closeOverlays();
     startTimer(dc, SPAWN_INTERVAL, location, 'spawn');
-    toast(`Spawn logged for ${dc.toUpperCase()} - next pot in 30m (${cap(location)})`, dc);
+    toast(`${cap(location)} spawn logged for ${dc.toUpperCase()}, next pot in 30m at ${cap(opposite(location))}`, dc);
   }
 
   // Fresh instance: the pot hasn't spawned yet, so there is no location to ask for.
@@ -301,7 +317,7 @@
   // -- Manual editor --
   function openEditor(dc) {
     closeOverlays();
-    editorLoc[dc] = state[dc].location || null;
+    editorLoc[dc] = state[dc].nextLocation || null;
 
     if (state[dc].targetTime) {
       const rem = Math.max(0, (state[dc].targetTime - Date.now()) / 1000);
@@ -335,15 +351,15 @@
       remaining = Math.max(0, Math.min(SPAWN_INTERVAL, mins * 60 + secs));
     }
 
-    const loc = editorLoc[dc] || null;
     const now = Date.now();
     state[dc].targetTime = now + remaining * 1000;
     state[dc].totalDuration = SPAWN_INTERVAL;
-    state[dc].location = loc;
+    // The editor picks where the UPCOMING pot spawns (no observed spawn to log)
+    state[dc].nextLocation = editorLoc[dc] || null;
 
     state.history.unshift({
       dc,
-      location: loc,
+      location: null,
       time: new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       type: 'manual',
     });
@@ -362,7 +378,7 @@
     const d = state[dc];
     const e = els[dc];
 
-    e.locDisp.textContent = d.location ? cap(d.location) : '';
+    e.locDisp.textContent = d.nextLocation ? `Next: ${cap(d.nextLocation)}` : '';
 
     if (!d.targetTime) {
       e.card.classList.remove('active', 'spawning');
@@ -409,7 +425,7 @@
       .map((dc) => ({
         dc,
         remaining: Math.max(0, (state[dc].targetTime - Date.now()) / 1000),
-        location: state[dc].location,
+        location: state[dc].nextLocation,
       }))
       .sort((a, b) => a.remaining - b.remaining);
 
@@ -494,7 +510,7 @@
       if (rem <= 0 && rem > -LATE_NOTIFY_GRACE && !notified.has(key)) {
         notified.add(key);
         chime();
-        notify(dc, state[dc].location);
+        notify(dc, state[dc].nextLocation);
         toast(`🏺 ${dc.toUpperCase()} pot is spawning!`, dc);
       }
 
