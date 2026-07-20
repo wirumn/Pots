@@ -462,6 +462,22 @@ button { font-family: inherit; }
 
 .btn-apply:hover { filter: brightness(1.1); }
 
+/* -- Expected spawn wall-clock time -- */
+.spawn-eta {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 0.9rem;
+}
+
+.dc-card.active[data-dc="chaos"] .spawn-eta { color: var(--dc-chaos); }
+.dc-card.active[data-dc="oce"] .spawn-eta   { color: var(--dc-oce); }
+.dc-card.active[data-dc="light"] .spawn-eta { color: var(--dc-light); }
+
 /* -- Card actions -- */
 .card-actions {
   display: flex;
@@ -615,6 +631,22 @@ button { font-family: inherit; }
 }
 
 .next-panel .panel-title { margin-bottom: 0.75rem; }
+
+/* Fresh instance note: no timer mode for this, just the rule of thumb */
+.fresh-note {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 1.1rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.fresh-note strong { color: var(--text-secondary); font-weight: 600; }
+.fresh-note-icon { color: var(--accent-gold); font-size: 0.7rem; flex-shrink: 0; }
 
 .next-content {
   display: flex;

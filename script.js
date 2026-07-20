@@ -7,7 +7,6 @@
 
   // -- Constants --
   const SPAWN_INTERVAL = 30 * 60;     // pot respawns 30 min after last spawn
-  const FRESH_INTERVAL = 10 * 60;     // fresh instance: first pot 10 min after open
   const WARNING_THRESHOLD = 5 * 60;   // heads-up 5 min before spawn
   const LATE_NOTIFY_GRACE = 5 * 60;   // still alert up to 5 min past spawn (hidden tab)
   const RING_R = 88;
@@ -67,13 +66,14 @@
         </div>
       </div>
 
+      <div class="spawn-eta" id="eta-${dc}">Waiting for a pot spawn</div>
+
       <div class="card-actions" id="actions-${dc}">
         <button class="btn btn-spawn" id="spawn-${dc}">
           <span class="btn-pulse" aria-hidden="true"></span>
           ✦ Pot Spawned!
         </button>
         <div class="secondary-actions">
-          <button class="btn btn-ghost" id="fresh-${dc}" title="Fresh instance - first pot in 10 minutes">Fresh (10m)</button>
           <button class="btn btn-ghost" id="edit-${dc}">Edit</button>
           <button class="btn btn-ghost btn-danger-ghost" id="reset-${dc}">Reset</button>
         </div>
@@ -144,10 +144,10 @@
       label:     document.getElementById(`label-${dc}`),
       status:    document.getElementById(`status-${dc}`),
       ring:      document.getElementById(`ring-${dc}`),
+      eta:       document.getElementById(`eta-${dc}`),
       locDisp:   document.getElementById(`loc-display-${dc}`),
       actions:   document.getElementById(`actions-${dc}`),
       spawnBtn:  document.getElementById(`spawn-${dc}`),
-      freshBtn:  document.getElementById(`fresh-${dc}`),
       editBtn:   document.getElementById(`edit-${dc}`),
       resetBtn:  document.getElementById(`reset-${dc}`),
       picker:    document.getElementById(`picker-${dc}`),
@@ -340,13 +340,6 @@
     toast(`${cap(location)} spawn logged for ${dc.toUpperCase()}, next pot in 30m at ${cap(opposite(location))}`, dc);
   }
 
-  // Fresh instance: the pot hasn't spawned yet, so there is no location to ask for.
-  function freshInstance(dc) {
-    closeOverlays();
-    startTimer(dc, FRESH_INTERVAL, null, 'fresh');
-    toast(`Fresh instance - first pot on ${dc.toUpperCase()} in 10m`, dc);
-  }
-
   // -- Manual editor --
   function openEditor(dc) {
     closeOverlays();
@@ -417,6 +410,7 @@
       e.card.classList.remove('active', 'spawning');
       e.timer.textContent = '--:--';
       e.label.textContent = 'No active timer';
+      e.eta.textContent = 'Waiting for a pot spawn';
       e.status.textContent = 'Idle';
       e.status.className = 'dc-status';
       e.ring.style.strokeDashoffset = RING_C; // empty ring
@@ -425,7 +419,10 @@
 
     const remaining = Math.max(0, (d.targetTime - Date.now()) / 1000);
     const total = d.totalDuration || SPAWN_INTERVAL;
-    e.ring.style.strokeDashoffset = RING_C * (1 - remaining / total);
+    e.ring.style.strokeDashoffset = RING_C * (1 - Math.min(1, remaining / total));
+    e.eta.textContent = `Expected at ${new Date(d.targetTime).toLocaleTimeString([], {
+      hour: '2-digit', minute: '2-digit',
+    })}`;
 
     if (remaining <= 0) {
       e.card.classList.remove('active');
@@ -446,7 +443,7 @@
       e.card.classList.add('active');
       e.card.classList.remove('spawning');
       e.timer.textContent = fmt(remaining);
-      e.label.textContent = total === FRESH_INTERVAL ? 'First pot in' : 'Next spawn in';
+      e.label.textContent = 'Next spawn in';
       e.status.textContent = 'Counting';
       e.status.className = 'dc-status counting';
     }
@@ -682,7 +679,6 @@
       const e = els[dc];
 
       e.spawnBtn.addEventListener('click', () => beginSpawn(dc));
-      e.freshBtn.addEventListener('click', () => freshInstance(dc));
       e.pickNorth.addEventListener('click', () => confirmSpawn(dc, 'north'));
       e.pickSouth.addEventListener('click', () => confirmSpawn(dc, 'south'));
       e.pickCancel.addEventListener('click', closeOverlays);
