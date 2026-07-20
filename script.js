@@ -7,7 +7,6 @@
 
   // -- Constants --
   const SPAWN_INTERVAL = 30 * 60;     // pot respawns 30 min after last spawn
-  const FRESH_INTERVAL = 10 * 60;     // fresh instance: first pot 10 min after open
   const WARNING_THRESHOLD = 5 * 60;   // heads-up 5 min before spawn
   const LATE_NOTIFY_GRACE = 5 * 60;   // still alert up to 5 min past spawn (hidden tab)
   const RING_R = 88;
@@ -46,11 +45,15 @@
   function cardHTML(dc, name) {
     const c = RING_C.toFixed(1);
     return `
-    <article class="dc-card" data-dc="${dc}" id="card-${dc}">
-      <div class="card-glow" aria-hidden="true"></div>
+    <article class="dc-card" data-dc="${dc}" id="card-${dc}" aria-labelledby="name-${dc}">
       <div class="card-header">
-        <span class="dc-indicator" aria-hidden="true"></span>
-        <h2 class="dc-name">${name}</h2>
+        <div class="dc-identity">
+          <span class="dc-indicator" aria-hidden="true"></span>
+          <div>
+            <span class="dc-kicker">Data center</span>
+            <h3 class="dc-name" id="name-${dc}">${name}</h3>
+          </div>
+        </div>
         <span class="dc-status" id="status-${dc}">Idle</span>
       </div>
 
@@ -62,24 +65,26 @@
         </svg>
         <div class="timer-display">
           <span class="timer-value" id="timer-${dc}">--:--</span>
-          <span class="timer-label" id="label-${dc}">No active timer</span>
+          <span class="timer-label" id="label-${dc}">Ready to log</span>
           <span class="timer-loc" id="loc-display-${dc}"></span>
         </div>
       </div>
 
+      <div class="spawn-eta" id="eta-${dc}">Waiting for a pot spawn</div>
+
       <div class="card-actions" id="actions-${dc}">
         <button class="btn btn-spawn" id="spawn-${dc}">
-          <span class="btn-pulse" aria-hidden="true"></span>
-          ✦ Pot Spawned!
+          <span aria-hidden="true">＋</span> Pot spawned
         </button>
         <div class="secondary-actions">
-          <button class="btn btn-ghost" id="fresh-${dc}" title="Fresh instance - first pot in 10 minutes">Fresh (10m)</button>
-          <button class="btn btn-ghost" id="edit-${dc}">Edit</button>
+          <button class="btn btn-ghost" id="edit-${dc}">Adjust timer</button>
           <button class="btn btn-ghost btn-danger-ghost" id="reset-${dc}">Reset</button>
         </div>
+        <p class="action-note">Starts a new 30-minute respawn cycle.</p>
       </div>
 
       <div class="loc-picker hidden" id="picker-${dc}">
+        <div class="picker-kicker">Pot spotted</div>
         <div class="picker-prompt">Where did it spawn?</div>
         <div class="picker-buttons">
           <button class="btn btn-loc" id="pick-${dc}-north"><span class="loc-arrow" aria-hidden="true">↑</span> North</button>
@@ -89,7 +94,7 @@
       </div>
 
       <div class="editor hidden" id="editor-${dc}">
-        <div class="editor-title">Set Timer</div>
+        <div class="editor-title">Adjust timer</div>
         <div class="editor-row">
           <label for="edit-min-${dc}">Minutes left</label>
           <input type="number" id="edit-min-${dc}" min="0" max="30" value="30" />
@@ -144,10 +149,10 @@
       label:     document.getElementById(`label-${dc}`),
       status:    document.getElementById(`status-${dc}`),
       ring:      document.getElementById(`ring-${dc}`),
+      eta:       document.getElementById(`eta-${dc}`),
       locDisp:   document.getElementById(`loc-display-${dc}`),
       actions:   document.getElementById(`actions-${dc}`),
       spawnBtn:  document.getElementById(`spawn-${dc}`),
-      freshBtn:  document.getElementById(`fresh-${dc}`),
       editBtn:   document.getElementById(`edit-${dc}`),
       resetBtn:  document.getElementById(`reset-${dc}`),
       picker:    document.getElementById(`picker-${dc}`),
@@ -340,13 +345,6 @@
     toast(`${cap(location)} spawn logged for ${dc.toUpperCase()}, next pot in 30m at ${cap(opposite(location))}`, dc);
   }
 
-  // Fresh instance: the pot hasn't spawned yet, so there is no location to ask for.
-  function freshInstance(dc) {
-    closeOverlays();
-    startTimer(dc, FRESH_INTERVAL, null, 'fresh');
-    toast(`Fresh instance - first pot on ${dc.toUpperCase()} in 10m`, dc);
-  }
-
   // -- Manual editor --
   function openEditor(dc) {
     closeOverlays();
@@ -416,7 +414,8 @@
     if (!d.targetTime) {
       e.card.classList.remove('active', 'spawning');
       e.timer.textContent = '--:--';
-      e.label.textContent = 'No active timer';
+      e.label.textContent = 'Ready to log';
+      e.eta.textContent = 'Waiting for a pot spawn';
       e.status.textContent = 'Idle';
       e.status.className = 'dc-status';
       e.ring.style.strokeDashoffset = RING_C; // empty ring
@@ -425,7 +424,10 @@
 
     const remaining = Math.max(0, (d.targetTime - Date.now()) / 1000);
     const total = d.totalDuration || SPAWN_INTERVAL;
-    e.ring.style.strokeDashoffset = RING_C * (1 - remaining / total);
+    e.ring.style.strokeDashoffset = RING_C * (1 - Math.min(1, remaining / total));
+    e.eta.textContent = `Expected ${new Date(d.targetTime).toLocaleTimeString([], {
+      hour: '2-digit', minute: '2-digit',
+    })}`;
 
     if (remaining <= 0) {
       e.card.classList.remove('active');
@@ -446,7 +448,7 @@
       e.card.classList.add('active');
       e.card.classList.remove('spawning');
       e.timer.textContent = fmt(remaining);
-      e.label.textContent = total === FRESH_INTERVAL ? 'First pot in' : 'Next spawn in';
+      e.label.textContent = 'Next spawn in';
       e.status.textContent = 'Counting';
       e.status.className = 'dc-status counting';
     }
@@ -463,19 +465,21 @@
       .sort((a, b) => a.remaining - b.remaining);
 
     if (items.length === 0) {
-      nextUpContent.innerHTML = '<p class="muted">No active timers - hit "Pot Spawned!" when a FATE pops</p>';
+      nextUpContent.innerHTML = `<div class="empty-next">
+        <span class="empty-icon" aria-hidden="true">◇</span>
+        <span><strong>No active timers</strong>Log a pot spawn below to start a 30-minute countdown.</span>
+      </div>`;
       return;
     }
 
     nextUpContent.innerHTML = items.map((item, idx) => {
       const t = item.remaining <= 0 ? 'NOW!' : fmt(item.remaining);
-      const l = item.location ? cap(item.location) : '-';
-      const hop = idx === 0 ? '<span class="ni-hop">← hop here</span>' : '';
+      const l = item.location ? cap(item.location) : 'Side unknown';
+      const hop = idx === 0 ? '<span class="ni-hop">Go here next</span>' : '';
       return `<div class="next-item${idx === 0 ? ' soonest' : ''}" data-dc="${item.dc}">
-        <span class="ni-dot"></span>
-        <span class="ni-dc">${item.dc.toUpperCase()}</span>
+        <span class="ni-dot" aria-hidden="true"></span>
+        <span class="ni-copy"><strong class="ni-dc">${item.dc.toUpperCase()}</strong><span class="ni-loc">${l}</span></span>
         <span class="ni-time">${t}</span>
-        <span class="ni-loc">${l}</span>
         ${hop}
       </div>`;
     }).join('');
@@ -483,7 +487,7 @@
 
   function renderHistory() {
     if (state.history.length === 0) {
-      historyList.innerHTML = '<p class="muted">No spawns recorded yet</p>';
+      historyList.innerHTML = '<p class="empty-copy">No spawns recorded yet.</p>';
       return;
     }
     historyList.innerHTML = state.history.slice(0, 30).map((entry) => {
@@ -535,7 +539,7 @@
 
     const days = Object.keys(state.dailyLog).sort().reverse();
     if (days.length === 0) {
-      tallyHistory.innerHTML = '<p class="muted">No pots logged yet</p>';
+      tallyHistory.innerHTML = '<p class="empty-copy">No pots logged yet.</p>';
       return;
     }
     tallyHistory.innerHTML = days.map((d) => {
@@ -640,34 +644,11 @@
     }
   }
 
-  // -- Background particles --
-  function createParticles() {
-    const container = document.getElementById('bgParticles');
-    const colors = [
-      'rgba(168, 85, 247, 0.3)',
-      'rgba(34, 211, 238, 0.25)',
-      'rgba(245, 197, 66, 0.2)',
-      'rgba(192, 132, 252, 0.2)',
-    ];
-    for (let i = 0; i < 30; i++) {
-      const p = document.createElement('div');
-      p.className = 'particle';
-      const size = Math.random() * 3 + 1;
-      p.style.width = `${size}px`;
-      p.style.height = `${size}px`;
-      p.style.left = `${Math.random() * 100}%`;
-      p.style.background = colors[Math.floor(Math.random() * colors.length)];
-      p.style.animationDuration = `${Math.random() * 15 + 10}s`;
-      p.style.animationDelay = `${Math.random() * 15}s`;
-      container.appendChild(p);
-    }
-  }
-
   // -- Map & lightbox --
   function bindMap() {
     mapToggle.addEventListener('click', () => {
       const open = mapContent.classList.toggle('open');
-      mapIcon.textContent = open ? '▼' : '▶';
+      mapIcon.textContent = open ? '−' : '＋';
       mapToggle.setAttribute('aria-expanded', String(open));
     });
 
@@ -682,7 +663,6 @@
       const e = els[dc];
 
       e.spawnBtn.addEventListener('click', () => beginSpawn(dc));
-      e.freshBtn.addEventListener('click', () => freshInstance(dc));
       e.pickNorth.addEventListener('click', () => confirmSpawn(dc, 'north'));
       e.pickSouth.addEventListener('click', () => confirmSpawn(dc, 'south'));
       e.pickCancel.addEventListener('click', closeOverlays);
@@ -739,7 +719,6 @@
   function init() {
     load();
     seedNotified();
-    createParticles();
     bind();
     DCS.forEach(updateCard);
     renderHistory();
