@@ -23,6 +23,8 @@
   ];
   const DCS = DC_LIST.map((d) => d.id);
 
+  const TIERS = ['bronze', 'silver', 'gold'];
+
   // -- State --
   // nextLocation = where the UPCOMING pot will spawn. Spawns alternate
   // sides, so logging a spawn at north predicts the next one at south.
@@ -31,6 +33,8 @@
     oce:   { targetTime: null, nextLocation: null, totalDuration: null },
     light: { targetTime: null, nextLocation: null, totalDuration: null },
     history: [],
+    // dailyLog: { 'YYYY-MM-DD': { bronze: 0, silver: 0, gold: 0 } }
+    dailyLog: {},
   };
 
   const opposite = (loc) => (loc === 'north' ? 'south' : loc === 'south' ? 'north' : null);
@@ -116,6 +120,21 @@
   document.getElementById('dcGrid').innerHTML =
     DC_LIST.map((d) => cardHTML(d.id, d.name)).join('');
 
+  // -- Tally tier buttons (one template for all tiers, same as the DC cards) --
+  function tierHTML(tier) {
+    return `
+    <div class="tally-tier" data-tier="${tier}">
+      <button class="tally-btn" id="tally-add-${tier}" title="Log a ${tier} pot">
+        <span class="tally-tier-name">${cap(tier)}</span>
+        <span class="tally-count" id="tally-count-${tier}">0</span>
+        <span class="tally-hint">tap to +1</span>
+      </button>
+      <button class="btn btn-ghost tally-minus" id="tally-sub-${tier}" aria-label="Undo one ${tier} pot">-1</button>
+    </div>`;
+  }
+
+  document.getElementById('tallyGrid').innerHTML = TIERS.map(tierHTML).join('');
+
   // -- DOM references --
   const els = {};
   DCS.forEach((dc) => {
@@ -145,6 +164,19 @@
       cancelBtn: document.getElementById(`cancel-${dc}`),
     };
   });
+
+  const tallyEls = {};
+  TIERS.forEach((tier) => {
+    tallyEls[tier] = {
+      add:   document.getElementById(`tally-add-${tier}`),
+      sub:   document.getElementById(`tally-sub-${tier}`),
+      count: document.getElementById(`tally-count-${tier}`),
+    };
+  });
+  const tallyDate    = document.getElementById('tallyDate');
+  const tallyTotal   = document.getElementById('tallyTotal');
+  const tallyHistory = document.getElementById('tallyHistory');
+  const tallyExport  = document.getElementById('tallyExport');
 
   const nextUpContent = document.getElementById('nextUpContent');
   const historyList   = document.getElementById('historyList');
@@ -180,6 +212,7 @@
         }
       });
       if (Array.isArray(s.history)) state.history = s.history;
+      if (s.dailyLog && typeof s.dailyLog === 'object') state.dailyLog = s.dailyLog;
       if (legacy) {
         save();
         localStorage.removeItem(LEGACY_STORAGE_KEY);
@@ -465,6 +498,82 @@
     }).join('');
   }
 
+  // -- Daily pot log --
+  // Counts are keyed by local date so the tally rolls over at midnight on its own.
+  function todayKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  let tallyDay = todayKey();
+
+  function dayTotal(day) {
+    return TIERS.reduce((sum, t) => sum + (day[t] || 0), 0);
+  }
+
+  function tallyAdd(tier, delta) {
+    const key = todayKey();
+    const day = state.dailyLog[key] || (state.dailyLog[key] = { bronze: 0, silver: 0, gold: 0 });
+    const next = Math.max(0, (day[tier] || 0) + delta);
+    if (next === day[tier]) return;
+    day[tier] = next;
+    // Drop empty days so undoing a misclick doesn't leave a zero row behind
+    if (dayTotal(day) === 0) delete state.dailyLog[key];
+    save();
+    renderTally();
+  }
+
+  function renderTally() {
+    const key = todayKey();
+    const today = state.dailyLog[key] || { bronze: 0, silver: 0, gold: 0 };
+
+    tallyDate.textContent = new Date().toLocaleDateString([], {
+      weekday: 'short', month: 'short', day: 'numeric',
+    });
+    TIERS.forEach((t) => { tallyEls[t].count.textContent = today[t] || 0; });
+    tallyTotal.textContent = dayTotal(today);
+
+    const days = Object.keys(state.dailyLog).sort().reverse();
+    if (days.length === 0) {
+      tallyHistory.innerHTML = '<p class="muted">No pots logged yet</p>';
+      return;
+    }
+    tallyHistory.innerHTML = days.map((d) => {
+      const row = state.dailyLog[d];
+      const isToday = d === key;
+      const label = isToday
+        ? 'Today'
+        : new Date(`${d}T12:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric' });
+      return `<div class="tally-row${isToday ? ' today' : ''}">
+        <span class="tr-date">${label}</span>
+        <span class="tr-bronze">${row.bronze || 0}</span>
+        <span class="tr-silver">${row.silver || 0}</span>
+        <span class="tr-gold">${row.gold || 0}</span>
+        <span class="tr-total">${dayTotal(row)}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function exportTallyCSV() {
+    const days = Object.keys(state.dailyLog).sort();
+    if (days.length === 0) {
+      toast('Nothing to export yet');
+      return;
+    }
+    const rows = [['date', 'bronze', 'silver', 'gold', 'total']];
+    days.forEach((d) => {
+      const row = state.dailyLog[d];
+      rows.push([d, row.bronze || 0, row.silver || 0, row.gold || 0, dayTotal(row)]);
+    });
+    const blob = new Blob([rows.map((r) => r.join(',')).join('\n')], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `pot-log-${todayKey()}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Pot log exported');
+  }
+
   // Tab title shows the soonest countdown so the tracker works from another tab
   function updateTitle() {
     const soonest = DCS
@@ -523,6 +632,12 @@
     });
     updateNextUp();
     updateTitle();
+
+    // Roll the tally over when the local date changes while the tab stays open
+    if (todayKey() !== tallyDay) {
+      tallyDay = todayKey();
+      renderTally();
+    }
   }
 
   // -- Background particles --
@@ -591,6 +706,12 @@
       });
     });
 
+    TIERS.forEach((tier) => {
+      tallyEls[tier].add.addEventListener('click', () => tallyAdd(tier, 1));
+      tallyEls[tier].sub.addEventListener('click', () => tallyAdd(tier, -1));
+    });
+    tallyExport.addEventListener('click', exportTallyCSV);
+
     clearHistBtn.addEventListener('click', () => {
       state.history = [];
       save();
@@ -622,6 +743,7 @@
     bind();
     DCS.forEach(updateCard);
     renderHistory();
+    renderTally();
     updateNextUp();
     updateTitle();
     setInterval(tick, 500);

@@ -34,6 +34,16 @@
   --dc-light-dim: rgba(245, 197, 66, 0.12);
   --dc-light-glow: rgba(245, 197, 66, 0.35);
 
+  --tier-bronze: #d08a4e;
+  --tier-bronze-deep: #9a5b2b;
+  --tier-bronze-glow: rgba(208, 138, 78, 0.35);
+  --tier-silver: #cdd3e0;
+  --tier-silver-deep: #8b93a7;
+  --tier-silver-glow: rgba(205, 211, 224, 0.3);
+  --tier-gold: #f5c542;
+  --tier-gold-deep: #ca8a04;
+  --tier-gold-glow: rgba(245, 197, 66, 0.35);
+
   /* Text */
   --text-primary: #f0eff4;
   --text-secondary: #9b97b0;
@@ -652,6 +662,150 @@ button { font-family: inherit; }
   color: var(--accent-emerald);
 }
 
+/* Daily Pot Log panel */
+.tally-panel { padding: 1.5rem 2rem; }
+
+.tally-today-bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.tally-date {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+}
+
+.tally-total {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.tally-total strong {
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tally-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.9rem;
+  margin-bottom: 1.25rem;
+}
+
+.tally-tier {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.tally-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.9rem 0.5rem 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-inset);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tally-btn:hover  { transform: translateY(-1px); background: var(--bg-inset-hover); }
+.tally-btn:active { transform: translateY(0); filter: brightness(1.15); }
+.tally-btn:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+
+.tally-tier-name {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.tally-tier[data-tier="bronze"] .tally-tier-name { color: var(--tier-bronze); }
+.tally-tier[data-tier="silver"] .tally-tier-name { color: var(--tier-silver); }
+.tally-tier[data-tier="gold"]   .tally-tier-name { color: var(--tier-gold); }
+
+.tally-tier[data-tier="bronze"] .tally-btn:hover { border-color: var(--tier-bronze-deep); box-shadow: 0 4px 20px var(--tier-bronze-glow); }
+.tally-tier[data-tier="silver"] .tally-btn:hover { border-color: var(--tier-silver-deep); box-shadow: 0 4px 20px var(--tier-silver-glow); }
+.tally-tier[data-tier="gold"]   .tally-btn:hover { border-color: var(--tier-gold-deep);   box-shadow: 0 4px 20px var(--tier-gold-glow); }
+
+.tally-count {
+  font-size: 1.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.tally-tier[data-tier="bronze"] .tally-count { color: var(--tier-bronze); text-shadow: 0 0 14px var(--tier-bronze-glow); }
+.tally-tier[data-tier="silver"] .tally-count { color: var(--tier-silver); text-shadow: 0 0 14px var(--tier-silver-glow); }
+.tally-tier[data-tier="gold"]   .tally-count { color: var(--tier-gold);   text-shadow: 0 0 14px var(--tier-gold-glow); }
+
+.tally-hint {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.tally-minus {
+  padding: 0.35rem;
+  font-size: 0.75rem;
+}
+
+/* Day-by-day table */
+.tally-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr;
+  align-items: center;
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.tally-row > :first-child { text-align: left; }
+
+.tally-head {
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding-bottom: 0.3rem;
+}
+
+.tally-history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 13rem;
+  overflow-y: auto;
+}
+
+.tally-history::-webkit-scrollbar { width: 4px; }
+.tally-history::-webkit-scrollbar-track { background: transparent; }
+.tally-history::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
+.tally-history .tally-row { background: rgba(255, 255, 255, 0.02); }
+.tally-history .tally-row.today { background: var(--bg-inset-hover); border: 1px solid var(--border-subtle); }
+.tally-history .tally-row.today .tr-date { color: var(--accent-emerald); font-weight: 600; }
+
+.tally-row .tr-date   { color: var(--text-secondary); }
+.tally-row .tr-bronze { color: var(--tier-bronze); }
+.tally-row .tr-silver { color: var(--tier-silver); }
+.tally-row .tr-gold   { color: var(--tier-gold); }
+.tally-row .tr-total  { color: var(--text-primary); font-weight: 600; }
+
 /* Map panel */
 .map-toggle {
   display: flex;
@@ -874,7 +1028,9 @@ button { font-family: inherit; }
   .timer-ring-wrap { width: 9.5rem; height: 9.5rem; }
   .timer-value { font-size: 2rem; }
 
-  .next-panel, .history-panel { padding: 1.2rem 1.4rem; }
+  .next-panel, .history-panel, .tally-panel { padding: 1.2rem 1.4rem; }
+  .tally-grid { gap: 0.6rem; }
+  .tally-count { font-size: 1.6rem; }
   .map-toggle { padding: 1rem 1.4rem; }
   .map-content { padding: 0 1rem; }
   .map-content.open { padding: 0 1rem 1rem; }
